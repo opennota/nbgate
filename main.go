@@ -66,6 +66,17 @@ var removeHeaders = []string{
 	"Keep-Alive",
 }
 
+func send(req *http.Request) (*http.Response, error) {
+	for _, cookie := range jar.Cookies(req.URL) {
+		req.AddCookie(cookie)
+	}
+	resp, err := http.DefaultTransport.RoundTrip(req)
+	if rc := resp.Cookies(); len(rc) > 0 {
+		jar.SetCookies(req.URL, rc)
+	}
+	return resp, err
+}
+
 func reverseProxy(w http.ResponseWriter, req *http.Request) {
 	logRequest(req)
 
@@ -98,7 +109,7 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 	outReq.Header.Set("Referer", baseURL)
 	outReq.Header.Set("Origin", baseURL)
 
-	resp, err := c.Do(outReq)
+	resp, err := send(outReq)
 	if err != nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		log.Printf("ERROR: can't contact %s: %v", host, err)
@@ -108,6 +119,13 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 
 	for _, h := range removeHeaders {
 		resp.Header.Del(h)
+	}
+	if loc := resp.Header.Get("Location"); loc != "" {
+		if u, err := url.Parse(loc); err == nil && u.Host == host {
+			u.Scheme = "http"
+			u.Host = req.Host
+			resp.Header.Set("Location", u.String())
+		}
 	}
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
