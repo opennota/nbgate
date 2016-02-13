@@ -130,10 +130,7 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 
-	_, err = io.Copy(w, resp.Body)
-	if err != nil {
-		log.Printf("ERROR: io.Copy: %v", err)
-	}
+	io.Copy(w, resp.Body)
 }
 
 func robotsHandler(w http.ResponseWriter, req *http.Request) {
