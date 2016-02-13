@@ -112,7 +112,7 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 	resp, err := send(outReq)
 	if err != nil {
 		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
-		log.Printf("ERROR: can't contact %s: %v", host, err)
+		log.Printf("proxy error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -168,7 +168,7 @@ func main() {
 	flag.Parse()
 
 	if err := login(); err != nil {
-		log.Fatalf("ERROR: failed to log in: %v. Invalid username or password?", err)
+		log.Fatalf("failed to log in: %v; invalid username or password?", err)
 	}
 
 	http.HandleFunc("/", reverseProxy)
