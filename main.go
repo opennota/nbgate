@@ -81,7 +81,7 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 	logRequest(req)
 
 	if rSensitivePath.MatchString(req.URL.Path) {
-		http.Error(w, "403 Forbidden", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
@@ -111,8 +111,8 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 
 	resp, err := send(outReq)
 	if err != nil {
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
 		log.Printf("proxy error: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
