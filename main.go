@@ -17,12 +17,14 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"regexp"
 )
 
@@ -169,6 +171,11 @@ func login() error {
 
 func main() {
 	flag.Parse()
+
+	if *user == "" || *pass == "" {
+		fmt.Println("Usage: nbgate -u username -p password")
+		os.Exit(1)
+	}
 
 	if err := login(); err != nil {
 		log.Fatalf("failed to log in: %v; invalid username or password?", err)
