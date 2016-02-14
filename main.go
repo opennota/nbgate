@@ -71,6 +71,9 @@ func send(req *http.Request) (*http.Response, error) {
 		req.AddCookie(cookie)
 	}
 	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
 	if rc := resp.Cookies(); len(rc) > 0 {
 		jar.SetCookies(req.URL, rc)
 	}
