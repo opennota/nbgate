@@ -58,7 +58,7 @@ func logRequest(r *http.Request) {
 	if err != nil {
 		host = r.RemoteAddr
 	}
-	log.Println(host, r.Method, r.URL, r.UserAgent())
+	log.Println(host, r.Method, r.URL, r.Referer(), r.UserAgent())
 }
 
 var removeHeaders = []string{
