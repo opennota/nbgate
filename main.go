@@ -26,6 +26,8 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+
+	"rsc.io/letsencrypt"
 )
 
 const (
@@ -37,7 +39,7 @@ const (
 var (
 	user = flag.String("u", "", "Username")
 	pass = flag.String("p", "", "Password")
-	addr = flag.String("http", ":1337", "HTTP service address")
+	addr = flag.String("http", "", "HTTP service address (will be redirected to HTTPS)")
 
 	jar, _ = cookiejar.New(nil)
 	c      = http.Client{Jar: jar}
@@ -169,6 +171,22 @@ func login() error {
 	return nil
 }
 
+func redirectHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.TLS != nil || r.Host == "" {
+		http.Error(w, "not found", 404)
+		return
+	}
+
+	u := r.URL
+	host, _, err := net.SplitHostPort(r.Host)
+	if err != nil {
+		host = r.Host
+	}
+	u.Host = host
+	u.Scheme = "https"
+	http.Redirect(w, r, u.String(), http.StatusFound)
+}
+
 func main() {
 	flag.Parse()
 
@@ -183,6 +201,21 @@ func main() {
 
 	http.HandleFunc("/", reverseProxy)
 	http.HandleFunc("/robots.txt", robotsHandler)
-	log.Println("listening on", *addr)
-	log.Fatal(http.ListenAndServe(*addr, nil))
+
+	if *addr != "" {
+		l, err := net.Listen("tcp", *addr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer l.Close()
+		go http.Serve(l, http.HandlerFunc(redirectHTTP))
+	}
+
+	var m letsencrypt.Manager
+	if err := m.CacheFile("letsencrypt.cache"); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("listening...")
+	log.Fatal(m.ServeHTTPS())
 }
