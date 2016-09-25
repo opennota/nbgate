@@ -135,6 +135,9 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 	copyHeader(w.Header(), resp.Header)
+	w.Header().Add("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Add("X-XSS-Protection", "1; mode=block")
+	w.Header().Add("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(resp.StatusCode)
 
 	io.Copy(w, resp.Body)
