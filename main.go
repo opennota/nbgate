@@ -129,7 +129,7 @@ func reverseProxy(w http.ResponseWriter, req *http.Request) {
 	}
 	if loc := resp.Header.Get("Location"); loc != "" {
 		if u, err := url.Parse(loc); err == nil && u.Host == host {
-			u.Scheme = "http"
+			u.Scheme = "https"
 			u.Host = req.Host
 			resp.Header.Set("Location", u.String())
 		}
