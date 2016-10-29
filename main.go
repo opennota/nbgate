@@ -27,7 +27,7 @@ import (
 	"os"
 	"regexp"
 
-	"rsc.io/letsencrypt"
+	"github.com/opennota/letsencrypt"
 )
 
 const (
@@ -174,22 +174,6 @@ func login() error {
 	return nil
 }
 
-func redirectHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.TLS != nil || r.Host == "" {
-		http.Error(w, "not found", 404)
-		return
-	}
-
-	u := r.URL
-	host, _, err := net.SplitHostPort(r.Host)
-	if err != nil {
-		host = r.Host
-	}
-	u.Host = host
-	u.Scheme = "https"
-	http.Redirect(w, r, u.String(), http.StatusFound)
-}
-
 func main() {
 	flag.Parse()
 
@@ -211,7 +195,7 @@ func main() {
 			log.Fatal(err)
 		}
 		defer l.Close()
-		go http.Serve(l, http.HandlerFunc(redirectHTTP))
+		go http.Serve(l, http.HandlerFunc(letsencrypt.RedirectHTTP))
 	}
 
 	var m letsencrypt.Manager
