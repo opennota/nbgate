@@ -15,6 +15,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -27,7 +28,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/opennota/letsencrypt"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 const (
@@ -189,20 +190,21 @@ func main() {
 	http.HandleFunc("/", reverseProxy)
 	http.HandleFunc("/robots.txt", robotsHandler)
 
-	if *addr != "" {
-		l, err := net.Listen("tcp", *addr)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer l.Close()
-		go http.Serve(l, http.HandlerFunc(letsencrypt.RedirectHTTP))
+	certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist("opennota.duckdns.org"),
+		Cache:      autocert.DirCache("certs"),
 	}
 
-	var m letsencrypt.Manager
-	if err := m.CacheFile("letsencrypt.cache"); err != nil {
-		log.Fatal(err)
+	server := &http.Server{
+		Addr: ":https",
+		TLSConfig: &tls.Config{
+			GetCertificate: certManager.GetCertificate,
+		},
 	}
+
+	go http.ListenAndServe(":http", certManager.HTTPHandler(nil))
 
 	log.Println("listening...")
-	log.Fatal(m.ServeHTTPS())
+	log.Fatal(server.ListenAndServeTLS("", ""))
 }
